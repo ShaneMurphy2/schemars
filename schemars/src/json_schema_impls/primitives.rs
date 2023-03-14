@@ -34,14 +34,6 @@ macro_rules! simple_impl {
 simple_impl!(str => String);
 simple_impl!(String => String);
 simple_impl!(bool => Boolean);
-simple_impl!(f32 => Number, "float");
-simple_impl!(f64 => Number, "double");
-simple_impl!(i8 => Integer, "int8");
-simple_impl!(i16 => Integer, "int16");
-simple_impl!(i32 => Integer, "int32");
-simple_impl!(i64 => Integer, "int64");
-simple_impl!(i128 => Integer, "int128");
-simple_impl!(isize => Integer, "int");
 simple_impl!(() => Null);
 
 simple_impl!(Path => String);
@@ -70,7 +62,9 @@ macro_rules! unsigned_impl {
                     format: Some($format.to_owned()),
                     ..Default::default()
                 };
-                schema.number().minimum = Some(0.0);
+                schema.number().minimum = Some(<$type>::MIN as f64);
+                #[cfg(feature = "strict_numeric_bounds")]
+                { schema.number().maximum = Some(<$type>::MAX as f64); }
                 schema.into()
             }
         }
@@ -83,6 +77,42 @@ unsigned_impl!(u32 => Integer, "uint32");
 unsigned_impl!(u64 => Integer, "uint64");
 unsigned_impl!(u128 => Integer, "uint128");
 unsigned_impl!(usize => Integer, "uint");
+
+macro_rules! signed_impl {
+    ($type:ty => $instance_type:ident, $format:expr) => {
+        impl JsonSchema for $type {
+            no_ref_schema!();
+
+            fn schema_name() -> String {
+                $format.to_owned()
+            }
+
+            fn json_schema(_: &mut SchemaGenerator) -> Schema {
+                #[allow(unused_mut)]
+                let mut schema = SchemaObject {
+                    instance_type: Some(InstanceType::$instance_type.into()),
+                    format: Some($format.to_owned()),
+                    ..Default::default()
+                };
+                #[cfg(feature = "strict_numeric_bounds")]
+                {
+                    schema.number().minimum = Some(<$type>::MIN as f64);
+                    schema.number().maximum = Some(<$type>::MAX as f64);
+                }
+                schema.into()
+            }
+        }
+    };
+}
+
+signed_impl!(f32 => Number, "float");
+signed_impl!(f64 => Number, "double");
+signed_impl!(i8 => Integer, "int8");
+signed_impl!(i16 => Integer, "int16");
+signed_impl!(i32 => Integer, "int32");
+signed_impl!(i64 => Integer, "int64");
+signed_impl!(i128 => Integer, "int128");
+signed_impl!(isize => Integer, "int");
 
 impl JsonSchema for char {
     no_ref_schema!();

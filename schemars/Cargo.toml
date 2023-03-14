@@ -41,6 +41,7 @@ trybuild = "1.0"
 default = ["derive"]
 
 derive = ["schemars_derive"]
+strict_numeric_bounds = ["derive", "schemars_derive/strict_numeric_bounds"]
 
 # Use a different representation for the map type of Schemars.
 # This allows data to be read into a Value and written back to a JSON string
